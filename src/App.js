@@ -3,22 +3,56 @@ import React, { useState } from 'react';
 function App() {
   // Beispiel-Daten
   const [cards] = useState([
-    { id: 1, name: 'Anna', age: 25, bio: 'Liebt Reisen und Fotografie' },
-    { id: 2, name: 'Maria', age: 28, bio: 'Kaffee-Enthusiastin' },
-    { id: 3, name: 'Lisa', age: 24, bio: 'Kunstliebhaberin aus München' },
-    { id: 4, name: 'Sarah', age: 27, bio: 'Outdoor-Abenteuer' },
-    { id: 5, name: 'Julia', age: 26, bio: 'Musikerin und Buchliebhaberin' },
+    { 
+      id: 1, 
+      name: 'Anna', 
+      age: 25, 
+      bio: 'Liebt Reisen und Fotografie',
+      image: 'https://images.unsplash.com/photo-1756728207483-cd934b34e360?q=80&w=685&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+    },
+    { 
+      id: 2, 
+      name: 'Maria', 
+      age: 28, 
+      bio: 'Kaffee-Enthusiastin',
+      image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=600&fit=crop&crop=face'
+    },
+    { 
+      id: 3, 
+      name: 'Lisa', 
+      age: 24, 
+      bio: 'Kunstliebhaberin aus München',
+      image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=600&fit=crop&crop=face'
+    },
+    { 
+      id: 4, 
+      name: 'Sarah', 
+      age: 27, 
+      bio: 'Outdoor-Abenteuer',
+      image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=600&fit=crop&crop=face'
+    },
+    { 
+      id: 5, 
+      name: 'Julia', 
+      age: 26, 
+      bio: 'Musikerin und Buchliebhaberin',
+      image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=600&fit=crop&crop=face'
+    },
   ]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [likes, setLikes] = useState([]);
   const [passes, setPasses] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [startX, setStartX] = useState(0);
 
   // Swipe nach rechts (Like)
   const handleLike = () => {
     if (currentIndex < cards.length) {
       setLikes([...likes, cards[currentIndex]]);
       setCurrentIndex(currentIndex + 1);
+      setDragOffset(0); // NEU: Position zurücksetzen
     }
   };
 
@@ -27,6 +61,7 @@ function App() {
     if (currentIndex < cards.length) {
       setPasses([...passes, cards[currentIndex]]);
       setCurrentIndex(currentIndex + 1);
+      setDragOffset(0); // NEU: Position zurücksetzen
     }
   };
 
@@ -35,6 +70,37 @@ function App() {
     setCurrentIndex(0);
     setLikes([]);
     setPasses([]);
+    setDragOffset(0);
+  };
+
+  // Maus gedrückt - Ziehen startet
+  const handleMouseDown = (e) => {
+    setIsDragging(true);
+    setStartX(e.clientX); // Startposition merken
+  };
+
+  // Maus bewegt - Karte mitziehen
+  const handleMouseMove = (e) => {
+    if (!isDragging) return; // Nur ziehen wenn Maus gedrückt
+    
+    const deltaX = e.clientX - startX; // Unterschied zur Startposition
+    setDragOffset(deltaX);
+  };
+
+  // Maus losgelassen - Entscheidung treffen
+  const handleMouseUp = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    
+    // Swipe-Schwellwert: 100 Pixel
+    if (dragOffset > 100) {
+      handleLike(); // Nach rechts = Like
+    } else if (dragOffset < -100) {
+      handlePass(); // Nach links = Pass
+    }
+    
+    // Position zurücksetzen
+    setDragOffset(0);
   };
 
   // Alle Karten durchgesehen
@@ -105,91 +171,151 @@ function App() {
 
   return (
     <div style={{ 
-      padding: '20px', 
+      padding: '10px', 
       textAlign: 'center',
       fontFamily: 'Arial, sans-serif',
-      maxWidth: '400px',
-      margin: '0 auto'
-    }}>
-      <h1 style={{ color: '#333', marginBottom: '10px' }}>
-        💕 Swipe App
-      </h1>
-      
-      <p style={{ color: '#666', marginBottom: '30px' }}>
-        Klicke Like oder Pass
-      </p>
-      
+      height: '100vh', 
+      display: 'flex',
+      flexDirection: 'column',
+      paddingBottom: '20px', 
+      position: 'relative' //Für absolute Positionierung der Buttons
+    }}>      
       {/* Aktuelle Karte */}
       <div style={{
         border: '2px solid #ddd',
         borderRadius: '15px',
-        padding: '30px 20px',
-        margin: '20px auto',
+        flex: '1',
         backgroundColor: '#fff',
         boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-        minHeight: '200px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center'
-      }}>
-        <h2 style={{ margin: '0 0 10px 0', color: '#333' }}>
-          {currentCard.name}, {currentCard.age}
-        </h2>
-        <p style={{ margin: '0', color: '#666', fontSize: '16px' }}>
-          {currentCard.bio}
-        </p>
+        overflow: 'hidden',
+        position: 'relative',
+        
+        // NEU: Transform für Bewegung und Rotation
+        transform: `translateX(${dragOffset}px) rotate(${dragOffset * 0.1}deg)`,
+        
+        // NEU: Cursor und User-Select
+        cursor: isDragging ? 'grabbing' : 'grab',
+        userSelect: 'none',
+        
+        // NEU: Smooth Transition nur wenn nicht gezogen wird
+        transition: isDragging ? 'none' : 'transform 0.3s ease'
+      }}
+        // NEU: Event-Handler hinzufügen
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp} // Auch wenn Maus das Element verlässt
+      >
+        <img 
+          src={currentCard.image}
+          alt={currentCard.name}
+          draggable={false} // Verhindert Standard Dragging des Bildes
+          style={{
+            width: '100%',
+            height: '100%', // 70% der Kartenhöhe
+            objectFit: 'cover',
+            pointerEvents: 'none' // Verhindert Interaktionen mit dem Bild
+          }}
+        />
+
+        {/* NEU: Heller Gradient-Overlay unten */}
+        <div style={{
+          position: 'absolute',
+          bottom: '0',
+          left: '0',
+          right: '0',
+          //height: '120px', // Höhe des Fades
+          height: '1px', // Nur 1px hoch
+          background: 'white',
+          boxShadow: '0 0 60px 60px rgba(255,255,255,0.6), 0 0 120px 80px rgba(255,255,255,0.3)',
+          pointerEvents: 'none' // Damit Swipe-Events durchgehen
+        }}>
+        </div>
+
+
+
+        {/* NEU: Swipe-Indikatoren */}
+        {dragOffset > 50 && (
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            right: '20px',
+            color: 'green', 
+            fontWeight: 'bold',
+            fontSize: '18px',
+            backgroundColor: 'rgba(255,255,255,0.9)',
+            padding: '5px 10px',
+            borderRadius: '5px'
+          }}>
+            LIKE! ❤️
+          </div>
+        )}
+        
+        {dragOffset < -50 && (
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            left: '20px',
+            color: 'red', 
+            fontWeight: 'bold',
+            fontSize: '18px',
+            backgroundColor: 'rgba(255,255,255,0.9)',
+            padding: '5px 10px',
+            borderRadius: '5px'
+          }}>
+            PASS! ❌
+          </div>
+        )}
       </div>
 
       {/* Buttons */}
-      <div style={{ marginTop: '30px' }}>
+      <div style={{
+        position: 'absolute',
+        bottom: '10px', // Über dem Status
+        left: '50%',
+        transform: 'translateX(-50%)',
+        display: 'flex',
+        gap: '20px'
+      }}>
         <button 
           onClick={handlePass}
           style={{ 
-            padding: '15px 25px', 
-            margin: '0 10px',
+            width: '60px',
+            height: '60px',
             backgroundColor: '#ff4757',
             color: 'white',
             border: 'none',
-            borderRadius: '50px',
+            borderRadius: '50%',
             cursor: 'pointer',
-            fontSize: '16px',
-            fontWeight: 'bold'
+            fontSize: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
           }}
         >
-          ❌ Pass
+          ✕
         </button>
         
         <button 
           onClick={handleLike}
           style={{ 
-            padding: '15px 25px', 
-            margin: '0 10px',
+            width: '60px',
+            height: '60px',
             backgroundColor: '#2ed573',
             color: 'white',
             border: 'none',
-            borderRadius: '50px',
+            borderRadius: '50%',
             cursor: 'pointer',
-            fontSize: '16px',
-            fontWeight: 'bold'
+            fontSize: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
           }}
         >
-          ❤️ Like
+          ♥
         </button>
-      </div>
-
-      {/* Status */}
-      <div style={{ 
-        marginTop: '30px', 
-        padding: '15px',
-        backgroundColor: '#f8f9fa',
-        borderRadius: '10px'
-      }}>
-        <p style={{ margin: '5px 0', color: '#666' }}>
-          Karte {currentIndex + 1} von {cards.length}
-        </p>
-        <p style={{ margin: '5px 0', color: '#666' }}>
-          Likes: {likes.length} | Passes: {passes.length}
-        </p>
       </div>
     </div>
   );
