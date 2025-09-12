@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 function App() {
   // Beispiel-Daten
@@ -46,6 +46,8 @@ function App() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [startX, setStartX] = useState(0);
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Swipe nach rechts (Like)
   const handleLike = () => {
@@ -102,6 +104,64 @@ function App() {
     // Position zurücksetzen
     setDragOffset(0);
   };
+
+  // Touch gestartet - wie mouseDown
+  const handleTouchStart = (e) => {
+    setIsDragging(true);
+    setStartX(e.touches[0].clientX); // touches[0] = erster Finger
+  };
+
+  // Touch bewegt - wie mouseMove  
+  const handleTouchMove = (e) => {
+    if (!isDragging) return;
+    
+    e.preventDefault(); // Verhindert Scrollen der Seite
+    const deltaX = e.touches[0].clientX - startX;
+    setDragOffset(deltaX);
+  };
+
+  // Touch beendet - wie mouseUp
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    
+    // Swipe-Schwellwert: 100 Pixel (gleich wie Mouse)
+    if (dragOffset > 100) {
+      handleLike();
+    } else if (dragOffset < -100) {
+      handlePass();
+    }
+    
+    setDragOffset(0);
+  };
+
+  const enterFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen()
+        .then(() => {
+          setIsFullscreen(true);
+        })
+        .catch(err => {
+          console.log('Fullscreen nicht möglich:', err);
+        });
+    }
+  };
+
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   // Alle Karten durchgesehen
   if (currentIndex >= cards.length) {
@@ -175,14 +235,19 @@ function App() {
       textAlign: 'center',
       fontFamily: 'Arial, sans-serif',
       height: '100vh', 
+      height: '100dvh', // Für neuere Browser
+      width: '100vw',
       display: 'flex',
       flexDirection: 'column',
       paddingBottom: '20px', 
-      position: 'relative' //Für absolute Positionierung der Buttons
+      position: 'relative', //Für absolute Positionierung der Buttons
+      boxSizing: 'border-box',
+      overflow: 'hidden', // WICHTIG: Kein Overflow
+      maxHeight: '100vh' // Zusätzliche Sicherheit
     }}>      
       {/* Aktuelle Karte */}
       <div style={{
-        border: '2px solid #ddd',
+        //border: '2px solid #ddd',
         borderRadius: '15px',
         flex: '1',
         backgroundColor: '#fff',
@@ -190,22 +255,53 @@ function App() {
         overflow: 'hidden',
         position: 'relative',
         
-        // NEU: Transform für Bewegung und Rotation
+        // Transform für Bewegung und Rotation
         transform: `translateX(${dragOffset}px) rotate(${dragOffset * 0.1}deg)`,
         
-        // NEU: Cursor und User-Select
+        // Cursor und User-Select
         cursor: isDragging ? 'grabbing' : 'grab',
         userSelect: 'none',
         
-        // NEU: Smooth Transition nur wenn nicht gezogen wird
+        // Smooth Transition nur wenn nicht gezogen wird
         transition: isDragging ? 'none' : 'transform 0.3s ease'
       }}
-        // NEU: Event-Handler hinzufügen
+        // Mouse-Events
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp} // Auch wenn Maus das Element verlässt
+
+        // Touch-Events
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd} // Falls Touch abgebrochen wird
       >
+        {!isFullscreen && (
+          <button
+            onClick={enterFullscreen}
+            style={{
+              position: 'absolute',
+              top: '15px',
+              right: '15px',
+              width: '40px',
+              height: '40px',
+              backgroundColor: 'rgba(0,0,0,0.6)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '50%',
+              cursor: 'pointer',
+              fontSize: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+              boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+            }}
+          >
+            ⛶
+          </button>
+        )}
         <img 
           src={currentCard.image}
           alt={currentCard.name}

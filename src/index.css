@@ -1,25 +1,66 @@
-/* Füge das zu deiner src/index.css hinzu (oder ersetze den Inhalt): */
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  touch-action: manipulation; /* Verhindert Zoom bei double-tap */
+}
+
+html {
+  height: 100%;
+  width: 100%;
+  position: fixed; /* Verhindert Scrollen */
+  overflow: hidden; /* Kein Scroll */
 }
 
 body {
   margin: 0;
+  padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow: hidden; /* Verhindert Scrolling */
-}
-
-html {
-  height: 100%;
+  
+  /* Mobile-spezifische Fixes */
+  height: 100vh;
+  height: 100dvh; /* Dynamic Viewport Height - neuere Browser */
+  width: 100vw;
+  position: fixed;
+  overflow: hidden;
+  
+  /* Verhindert Text-Selektion */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  
+  /* Verhindert Bounce-Scrolling auf iOS */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
 }
 
 #root {
   height: 100vh;
+  height: 100dvh; /* Fallback für neuere Browser */
+  width: 100vw;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+/* Mobile-spezifische Regeln */
+@media screen and (max-width: 768px) {
+  body {
+    font-size: 16px; /* Verhindert Zoom bei Input-Focus */
+  }
+  
+  /* Für sehr kleine Screens */
+  @media screen and (max-height: 600px) {
+    #root {
+      height: 100vh;
+    }
+  }
 }
