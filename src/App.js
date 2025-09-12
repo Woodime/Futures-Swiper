@@ -48,10 +48,7 @@ function App() {
   ]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [choicesMade, setChoicesMade] = useState(() => {
-    // Lade gespeicherte Choices beim App-Start
-    return loadChoicesFromStorage();
-  });
+  
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [startX, setStartX] = useState(0);
@@ -212,6 +209,11 @@ function App() {
     };
     reader.readAsText(file);
   };
+
+  const [choicesMade, setChoicesMade] = useState(() => {
+    // Lade gespeicherte Choices beim App-Start
+    return loadChoicesFromStorage();
+  });
 
   React.useEffect(() => {
     const handleFullscreenChange = () => {
