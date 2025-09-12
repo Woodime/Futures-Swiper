@@ -5,16 +5,16 @@ function App() {
   const [cards] = useState([
     { 
       id: 1, 
-      image: '/assets/images/questions/RuhigOderLebendigExtended02.jpg',
+      image: '/assets/images/questions/Wagen02.jpg',
       option_left: {
-        text: 'Gemeinsames Auto',
-        image: '/assets/images/options/RuhigOderLebendig_slow.jpg',
-        color: '#F2F2F2'
+        text: 'Eigener Wagen',
+        image: '/assets/images/options/EigenerWagen.jpg',
+        color: '#F1EADC'
       },
       option_right: {
-        text: 'Eigenes Auto',
-        image: '/assets/images/options/RuhigOderLebendig_lively.jpg',
-        color: '#F2F2F2'
+        text: 'Gemeinsames Fahrzeug',
+        image: '/assets/images/options/GemeinsamesFahrzeug.jpg',
+        color: '#F1EADC'
       }
     },
     { 
@@ -31,10 +31,27 @@ function App() {
         color: '#FBAC4F'
       }
     },
+    { 
+      id: 3, 
+      image: '/assets/images/questions/SchnellOderBewusst.jpg',
+      option_left: {
+        text: 'Schnell',
+        image: '/assets/images/options/SchnellOderBewusst_schnell.jpg',
+        color: '#E16D54'
+      },
+      option_right: {
+        text: 'Bewusst',
+        image: '/assets/images/options/SchnellOderBewusst_bewusst.jpg',
+        color: '#432774'
+      }
+    },
   ]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [choicesMade, setChoicesMade] = useState([]);
+  const [choicesMade, setChoicesMade] = useState(() => {
+    // Lade gespeicherte Choices beim App-Start
+    return loadChoicesFromStorage();
+  });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [startX, setStartX] = useState(0);
@@ -45,9 +62,12 @@ function App() {
   const handleOptionLeft = () => {
     const choice = {
       card: cards[currentIndex],
-      chosenOption: cards[currentIndex].option_left
+      chosenOption: cards[currentIndex].option_left,
+      timestamp: new Date().toISOString() 
     };
-    setChoicesMade([...choicesMade, choice]);
+    const newChoices = [...choicesMade, choice];
+    setChoicesMade(newChoices);
+    saveChoicesToStorage(newChoices);  // Sofort speichern
     setCurrentIndex(currentIndex + 1);
     setDragOffset(0);
   };
@@ -56,9 +76,12 @@ function App() {
   const handleOptionRight = () => {
     const choice = {
       card: cards[currentIndex],
-      chosenOption: cards[currentIndex].option_right
+      chosenOption: cards[currentIndex].option_right,
+      timestamp: new Date().toISOString() 
     };
-    setChoicesMade([...choicesMade, choice]);
+    const newChoices = [...choicesMade, choice];
+    setChoicesMade(newChoices);
+    saveChoicesToStorage(newChoices);  // Sofort speichern
     setCurrentIndex(currentIndex + 1);
     setDragOffset(0);
   };
@@ -139,6 +162,55 @@ function App() {
           console.log('Fullscreen nicht möglich:', err);
         });
     }
+  };
+
+  // Helper-Funktionen für localStorage
+  const saveChoicesToStorage = (choices) => {
+    try {
+      localStorage.setItem('swipeAppChoices', JSON.stringify(choices));
+    } catch (error) {
+      console.error('Fehler beim Speichern:', error);
+    }
+  };
+
+  const loadChoicesFromStorage = () => {
+    try {
+      const saved = localStorage.getItem('swipeAppChoices');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Fehler beim Laden:', error);
+      return [];
+    }
+  };
+
+  const exportChoices = () => {
+    const dataStr = JSON.stringify(choicesMade, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'swipe-app-choices.json';
+    link.click();
+    
+    URL.revokeObjectURL(url);
+  };
+
+  const importChoices = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const imported = JSON.parse(e.target.result);
+        setChoicesMade(imported);
+        saveChoicesToStorage(imported);
+      } catch (error) {
+        alert('Fehler beim Importieren der Datei');
+      }
+    };
+    reader.readAsText(file);
   };
 
   React.useEffect(() => {
@@ -260,6 +332,12 @@ function App() {
           }}
         />
 
+        {/* Preload Images */}
+        <div style={{ display: 'none' }}>
+          <img src={currentCard.option_left.image} alt="preload" />
+          <img src={currentCard.option_right.image} alt="preload" />
+        </div>
+
         {/* Heller Gradient-Overlay unten */}
         <div style={{
           position: 'absolute',
@@ -283,14 +361,16 @@ function App() {
             display: 'flex',
             alignItems: 'center',
             transform: 'rotate(45deg)',
+            padding: '5px',
+            backgroundColor: currentCard.option_left.color,
+            borderRadius: '25px',
           }}>
             <img 
               src={currentCard.option_left.image}
               alt={currentCard.option_left.text}
               style={{
                 height: '70px',
-                borderRadius: '25px',
-                border: `5px solid ${currentCard.option_left.color}`,
+                borderRadius: '20px',
                 objectFit: 'cover',
                 display: 'block'
               }}
@@ -306,14 +386,16 @@ function App() {
             display: 'flex',
             alignItems: 'center',
             transform: 'rotate(-45deg)',
+            padding: '5px',
+            backgroundColor: currentCard.option_right.color,
+            borderRadius: '25px',
           }}>
             <img 
               src={currentCard.option_right.image}
               alt={currentCard.option_right.text}
               style={{
                 height: '70px',
-                borderRadius: '25px',
-                border: `5px solid ${currentCard.option_right.color}`, 
+                borderRadius: '20px',
                 objectFit: 'cover',
                 display: 'block'
               }}
