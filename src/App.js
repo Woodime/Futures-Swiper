@@ -1,6 +1,76 @@
 import React, { useState, useEffect } from 'react';
+import { db } from './firebase';
+import { collection, addDoc, getDocs, orderBy, query } from 'firebase/firestore';
 
 function App() {
+
+  
+  const getUserId = () => {
+    let userId = localStorage.getItem('swipeAppUserId');
+    if (!userId) {
+      // Einfache UUID generieren
+      userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('swipeAppUserId', userId);
+    }
+    return userId;
+  };
+
+  // Helper-Funktionen für localStorage
+  const saveChoicesToStorage = (choices) => {
+    try {
+      localStorage.setItem('swipeAppChoices', JSON.stringify(choices));
+    } catch (error) {
+      console.error('Fehler beim Speichern:', error);
+    }
+  };
+
+  const loadChoicesFromStorage = () => {
+    try {
+      const saved = localStorage.getItem('swipeAppChoices');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Fehler beim Laden:', error);
+      return [];
+    }
+  };
+
+
+  // Firestore-Funktionen
+  const saveChoiceToFirestore = async (choice) => {
+    try {
+      await addDoc(collection(db, 'choices'), {
+        ...choice,
+        userId: getUserId(), 
+        createdAt: new Date(),
+        userAgent: navigator.userAgent.substring(0, 100) // Kurzer User-Agent
+      });
+      console.log('Choice saved to Firestore');
+    } catch (error) {
+      console.error('Fehler beim Speichern in Firestore:', error);
+    }
+  };
+
+
+  
+  const importChoices = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const imported = JSON.parse(e.target.result);
+        setChoicesMade(imported);
+        saveChoicesToStorage(imported);
+      } catch (error) {
+        alert('Fehler beim Importieren der Datei');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+
+
   // Beispiel-Daten
   const [cards] = useState([
     { 
@@ -55,8 +125,13 @@ function App() {
 
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  const [choicesMade, setChoicesMade] = useState(() => {
+    // Lade gespeicherte Choices beim App-Start
+    return loadChoicesFromStorage();
+  });
+
   // Swipe/Click nach links = Option 1 / option_left
-  const handleOptionLeft = () => {
+  const handleOptionLeft = async () => {
     const choice = {
       card: cards[currentIndex],
       chosenOption: cards[currentIndex].option_left,
@@ -64,13 +139,17 @@ function App() {
     };
     const newChoices = [...choicesMade, choice];
     setChoicesMade(newChoices);
-    saveChoicesToStorage(newChoices);  // Sofort speichern
+
+    // Speichern lokal und in Firestore
+    saveChoicesToStorage(newChoices);
+    await saveChoiceToFirestore(choice);
+
     setCurrentIndex(currentIndex + 1);
     setDragOffset(0);
   };
 
   // Swipe/Click nach rechts = Option 2 / option_right
-  const handleOptionRight = () => {
+  const handleOptionRight = async () => {
     const choice = {
       card: cards[currentIndex],
       chosenOption: cards[currentIndex].option_right,
@@ -78,7 +157,12 @@ function App() {
     };
     const newChoices = [...choicesMade, choice];
     setChoicesMade(newChoices);
-    saveChoicesToStorage(newChoices);  // Sofort speichern
+
+    // Speichern lokal und in Firestore
+    saveChoicesToStorage(newChoices);
+    await saveChoiceToFirestore(choice);
+
+
     setCurrentIndex(currentIndex + 1);
     setDragOffset(0);
   };
@@ -161,24 +245,7 @@ function App() {
     }
   };
 
-  // Helper-Funktionen für localStorage
-  const saveChoicesToStorage = (choices) => {
-    try {
-      localStorage.setItem('swipeAppChoices', JSON.stringify(choices));
-    } catch (error) {
-      console.error('Fehler beim Speichern:', error);
-    }
-  };
-
-  const loadChoicesFromStorage = () => {
-    try {
-      const saved = localStorage.getItem('swipeAppChoices');
-      return saved ? JSON.parse(saved) : [];
-    } catch (error) {
-      console.error('Fehler beim Laden:', error);
-      return [];
-    }
-  };
+  
 
   const exportChoices = () => {
     const dataStr = JSON.stringify(choicesMade, null, 2);
@@ -193,27 +260,8 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
-  const importChoices = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const imported = JSON.parse(e.target.result);
-        setChoicesMade(imported);
-        saveChoicesToStorage(imported);
-      } catch (error) {
-        alert('Fehler beim Importieren der Datei');
-      }
-    };
-    reader.readAsText(file);
-  };
 
-  const [choicesMade, setChoicesMade] = useState(() => {
-    // Lade gespeicherte Choices beim App-Start
-    return loadChoicesFromStorage();
-  });
+  
 
   React.useEffect(() => {
     const handleFullscreenChange = () => {
