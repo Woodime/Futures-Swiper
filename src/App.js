@@ -130,6 +130,9 @@ function App() {
     return loadChoicesFromStorage();
   });
 
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+
   // Swipe/Click nach links = Option 1 / option_left
   const handleOptionLeft = async () => {
     const choice = {
@@ -285,13 +288,97 @@ function App() {
     }
   }, [currentIndex, cards.length]);
 
+  // Alle Bilder Laden
+  useEffect(() => {
+    const preloadImages = async () => {
+      const imageUrls = [];
+      cards.forEach(card => {
+        imageUrls.push(card.image);
+        imageUrls.push(card.option_left.image);
+        imageUrls.push(card.option_right.image);
+      });
+
+      let loadedImages = 0;
+      const totalImages = imageUrls.length;
+
+      const loadImage = (url) => {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            loadedImages++;
+            setLoadingProgress(Math.round((loadedImages / totalImages) * 100));
+            resolve();
+          };
+          img.onerror = () => {
+            console.error('Fehler beim Laden des Bildes:', url);
+            loadedImages++;
+            setLoadingProgress(Math.round((loadedImages / totalImages) * 100));
+            resolve(); // Auch bei Fehler auflösen, damit Promise.all nicht hängen bleibt
+          };
+          img.src = url;
+        });
+      };
+
+      await Promise.all(imageUrls.map(url => loadImage(url)));
+
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 300);
+    };
+
+    preloadImages();
+  }, [cards]);
+
   let currentCard = cards[currentIndex];
 
   if (!currentCard) {
     currentCard = cards[0];
   }
 
-
+  // Loading Screen
+  if (isLoading) {
+    return (
+      <div style={{
+        width: '100vw',
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f5f5f5',
+        fontFamily: '"Patrick Hand", cursive'
+      }}>
+        <div style={{
+          fontSize: '32px',
+          marginBottom: '20px',
+          color: '#333'
+        }}>
+          Loading...
+        </div>
+        <div style={{
+          width: '200px',
+          height: '8px',
+          backgroundColor: '#ddd',
+          borderRadius: '4px',
+          overflow: 'hidden'
+        }}>
+          <div style={{
+            width: `${loadingProgress}%`,
+            height: '100%',
+            backgroundColor: '#4CAF50',
+            transition: 'width 0.3s ease'
+          }} />
+        </div>
+        <div style={{
+          marginTop: '10px',
+          fontSize: '18px',
+          color: '#666'
+        }}>
+          {loadingProgress}%
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{ 
       padding: '10px', 
