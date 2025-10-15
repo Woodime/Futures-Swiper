@@ -72,50 +72,61 @@ function App() {
 
 
   // Beispiel-Daten
-  const [cards] = useState([
-    { 
-      id: 1, 
-      image: '/assets/images/questions/Wagen02.jpg',
-      option_left: {
-        text: 'Eigener Wagen',
-        image: '/assets/images/options/EigenerWagen.jpg',
-        color: '#F1EADC'
+  const [cards] = useState(() => {
+    const allCards = [
+      {
+        id: 1, 
+        image: '/assets/images/questions/Wagen02.jpg',
+        option_left: {
+          text: 'Eigener Wagen',
+          image: '/assets/images/options/EigenerWagen.jpg',
+          color: '#F1EADC'
+        },
+        option_right: {
+          text: 'Gemeinsames Fahrzeug',
+          image: '/assets/images/options/GemeinsamesFahrzeug.jpg',
+          color: '#F1EADC'
+        }
       },
-      option_right: {
-        text: 'Gemeinsames Fahrzeug',
-        image: '/assets/images/options/GemeinsamesFahrzeug.jpg',
-        color: '#F1EADC'
-      }
-    },
-    { 
-      id: 2, 
-      image: '/assets/images/questions/RuhigOderLebendigExtended02.jpg',
-      option_left: {
-        text: 'Ruhig',
-        image: '/assets/images/options/RuhigOderLebendig_slow.jpg',
-        color: '#E4B081'
+      { 
+        id: 2, 
+        image: '/assets/images/questions/RuhigOderLebendigExtended02.jpg',
+        option_left: {
+          text: 'Ruhig',
+          image: '/assets/images/options/RuhigOderLebendig_slow.jpg',
+          color: '#E4B081'
+        },
+        option_right: {
+          text: 'Lebendig',
+          image: '/assets/images/options/RuhigOderLebendig_lively.jpg',
+          color: '#FBAC4F'
+        }
       },
-      option_right: {
-        text: 'Lebendig',
-        image: '/assets/images/options/RuhigOderLebendig_lively.jpg',
-        color: '#FBAC4F'
-      }
-    },
-    { 
-      id: 3, 
-      image: '/assets/images/questions/SchnellOderBewusst.jpg',
-      option_left: {
-        text: 'Schnell',
-        image: '/assets/images/options/SchnellOderBewusst_schnell.jpg',
-        color: '#E16D54'
+      { 
+        id: 3, 
+        image: '/assets/images/questions/SchnellOderBewusst.jpg',
+        option_left: {
+          text: 'Schnell',
+          image: '/assets/images/options/SchnellOderBewusst_schnell.jpg',
+          color: '#E16D54'
+        },
+        option_right: {
+          text: 'Bewusst',
+          image: '/assets/images/options/SchnellOderBewusst_bewusst.jpg',
+          color: '#432774'
+        }
       },
-      option_right: {
-        text: 'Bewusst',
-        image: '/assets/images/options/SchnellOderBewusst_bewusst.jpg',
-        color: '#432774'
-      }
-    },
-  ]);
+    ];
+
+    // Fisher-Yates Shuffle
+    for (let i = allCards.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allCards[i], allCards[j]] = [allCards[j], allCards[i]];
+    }
+    
+    return allCards;
+  }
+);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   
