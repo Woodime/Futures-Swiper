@@ -133,6 +133,8 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
 
+  const [isFinished, setIsFinished] = useState(false);
+
   // Swipe/Click nach links = Option 1 / option_left
   const handleOptionLeft = async () => {
     const choice = {
@@ -147,7 +149,11 @@ function App() {
     saveChoicesToStorage(newChoices);
     await saveChoiceToFirestore(choice);
 
-    setCurrentIndex(currentIndex + 1);
+    if (currentIndex + 1 >= cards.length) {
+      setIsFinished(true);
+    } else {
+      setCurrentIndex(currentIndex + 1);
+    }
     setDragOffset(0);
   };
 
@@ -166,7 +172,11 @@ function App() {
     await saveChoiceToFirestore(choice);
 
 
-    setCurrentIndex(currentIndex + 1);
+    if (currentIndex + 1 >= cards.length) {
+      setIsFinished(true);
+    } else {
+      setCurrentIndex(currentIndex + 1);
+    }
     setDragOffset(0);
   };
 
@@ -174,6 +184,7 @@ function App() {
   const handleReset = () => {
     setCurrentIndex(0);
     setDragOffset(0);
+    setIsFinished(false);
   };
 
   // Maus gedrückt - Ziehen startet
@@ -282,12 +293,6 @@ function App() {
     };
   }, []);
 
-  useEffect(() => {
-    if (currentIndex >= cards.length && cards.length > 0) {
-      handleReset(); // Automatischer Reset
-    }
-  }, [currentIndex, cards.length]);
-
   // Alle Bilder Laden
   useEffect(() => {
     const preloadImages = async () => {
@@ -376,6 +381,45 @@ function App() {
         }}>
           {loadingProgress}%
         </div>
+      </div>
+    );
+  }
+  // Fertig Screen
+  if (isFinished) {
+    return (
+      <div style={{
+        width: '100vw',
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f5f5f5',
+        fontFamily: '"Patrick Hand", cursive'
+      }}>
+        <div style={{
+          fontSize: '48px',
+          marginBottom: '30px',
+          color: '#333'
+        }}>
+          Danke fürs Mitmachen! 🎉
+        </div>
+        <button
+          onClick={handleReset}
+          style={{
+            padding: '15px 40px',
+            fontSize: '24px',
+            fontFamily: '"Patrick Hand", cursive',
+            backgroundColor: '#4CAF50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '25px',
+            cursor: 'pointer',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+          }}
+        >
+          Nochmal
+        </button>
       </div>
     );
   }
